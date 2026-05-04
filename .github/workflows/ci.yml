@@ -7,32 +7,103 @@ on:
     branches: [ main ]
 
 jobs:
-  test-engine:
+  # ── Job 1：启动靶机 + 跑安全测试 ────────────────────────
+  security-test:
+    name: Security Test Suite
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          pip install -r engine/requirements.txt
+      - name: Install engine dependencies
+        run: pip install -r engine/requirements.txt
 
-      - name: Run security test cases
+      - name: Install target dependencies
+        run: pip install flask
+
+      - name: Start mock target server
+        run: |
+          cd target
+          nohup python app.py &
+          sleep 3
+          echo "Target server started"
+
+      - name: Wait for server ready
+        run: |
+          for i in {1..10}; do
+            curl -s http://localhost:8080/api/items && break
+            sleep 1
+          done
+
+      - name: Run pytest security cases
+        env:
+          TARGET_URL: http://localhost:8080
+          ADMIN_TOKEN: eyJ_admin_token_here
+          USER_TOKEN: eyJ_user_token_here
         run: |
           cd engine
-          pytest cases/ -v --alluredir=allure-results || true
-
-      - name: Bandit SAST scan
-        run: |
-          pip install bandit
-          bandit -r engine/ -f json -o bandit-report.json || true
+          pytest cases/ -v \
+            --alluredir=allure-results \
+            --tb=short \
+            -q
 
       - name: Upload Allure results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: engine/allure-results/
+
+  # ── Job 2：Bandit SAST 代码扫描 ─────────────────────────
+  bandit-sast:
+    name: Bandit SAST Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Bandit
+        run: pip install bandit[toml]
+
+      - name: Run Bandit on engine/
+        run: |
+          bandit -r engine/ \
+            --exclude engine/cases/ \
+            -f json \
+            -o bandit-report.json \
+            --severity-level medium \
+            || true
+
+      - name: Show Bandit summary
+        run: |
+          python - <<'EOF'
+          import json, sys
+          with open("bandit-report.json") as f:
+              r = json.load(f)
+          metrics = r.get("metrics", {}).get("_totals", {})
+          highs = metrics.get("SEVERITY.HIGH", 0)
+          meds  = metrics.get("SEVERITY.MEDIUM", 0)
+          print(f"Bandit 扫描完成 — HIGH: {highs}  MEDIUM: {meds}")
+          if highs > 0:
+              print("发现高危问题，请检查 bandit-report.json")
+              sys.exit(1)
+          EOF
+
+      - name: Upload Bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json

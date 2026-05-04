@@ -2,13 +2,11 @@
 
 
 
-!\[CI](https://github.com/YOUR\_USERNAME/api-security-platform/actions/workflows/ci.yml/badge.svg)
-
-!\[Python](https://img.shields.io/badge/Python-3.11-blue)
-
-!\[Go](https://img.shields.io/badge/Go-1.22-00ADD8)
-
-!\[License](https://img.shields.io/badge/license-MIT-green)
+![CI](https://github.com/Wenzel-HZ/api-security-platform/actions/workflows/ci.yml/badge.svg)
+![Security Scan](https://github.com/Wenzel-HZ/api-security-platform/actions/workflows/security-scan.yml/badge.svg)
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![Go](https://img.shields.io/badge/Go-1.22-00ADD8)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 
 
