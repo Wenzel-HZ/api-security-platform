@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+allure-results/
+allure-report/
+.env
+*.egg-info/
+venv/
+.venv/
+
+# Go
+server/bin/
+*.exe
+
+# 敏感配置
+*.env
+.env.*
+config/secrets.yaml
+*_secret*
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# 报告 / 日志
+*.log
+reports/

@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r engine/requirements.txt
+
+      - name: Run security test cases
+        run: |
+          cd engine
+          pytest cases/ -v --alluredir=allure-results || true
+
+      - name: Bandit SAST scan
+        run: |
+          pip install bandit
+          bandit -r engine/ -f json -o bandit-report.json || true
+
+      - name: Upload Allure results
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: engine/allure-results/
